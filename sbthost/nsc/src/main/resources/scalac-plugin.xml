@@ -1,0 +1,4 @@
+<plugin>
+  <name>sbthost</name>
+  <classname>scala.meta.internal.sbthost.SbthostPlugin</classname>
+</plugin>
