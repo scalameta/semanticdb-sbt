@@ -176,3 +176,20 @@ lazy val isFullCrossVersion = Seq(
     base / ("scala-" + scalaVersion.value)
   }
 )
+
+commands += Command.command("release") { s =>
+  "clean" ::
+    "very publishSigned" ::
+    "sonatypeRelease" ::
+    "gitPushTag" ::
+    s
+}
+
+lazy val gitPushTag = taskKey[Unit]("Push to git tag")
+gitPushTag := {
+  val tag = s"v${version.value}"
+  assert(!tag.endsWith("SNAPSHOT"))
+  import sys.process._
+  Seq("git", "tag", "-a", tag, "-m", tag).!!
+  Seq("git", "push", "--tags").!!
+}
