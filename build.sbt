@@ -8,11 +8,11 @@ moduleName := "sbthostRoot"
 lazy val nsc = project
   .in(file("sbthost/nsc"))
   .settings(
-    moduleName := "sbthost-nsc",
-    mergeSettings,
     publishableSettings,
     isFullCrossVersion,
     isScala210,
+    moduleName := "sbthost-nsc",
+    mergeSettings,
     description := "Compiler plugin to produce .semanticdb files for sbt builds.",
     libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
     protobufSettings
@@ -21,7 +21,6 @@ lazy val nsc = project
 lazy val runtime = project
   .in(file("sbthost/runtime"))
   .settings(
-    sharedSettings,
     publishableSettings,
     moduleName := "sbthost-runtime",
     libraryDependencies += "org.scalameta" %% "scalameta" % scalametaVersion,
@@ -141,6 +140,14 @@ lazy val nonPublishableSettings = Seq(
 )
 
 lazy val publishableSettings = Def.settings(
+  sharedSettings,
+  publishTo := {
+    if (customVersion.isDefined)
+      Some("releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2")
+    else publishTo.in(bintray).value
+  },
+  bintrayOrganization := Some("scalameta"),
+  bintrayRepository := "maven",
   publishMavenStyle := true,
   licenses += "BSD" -> url("https://github.com/scalameta/scalameta/blob/master/LICENSE.md"),
   pomExtra := (
@@ -193,3 +200,5 @@ gitPushTag := {
   Seq("git", "tag", "-a", tag, "-m", tag).!!
   Seq("git", "push", "--tags").!!
 }
+
+lazy val customVersion = sys.props.get("sbthost.version")
