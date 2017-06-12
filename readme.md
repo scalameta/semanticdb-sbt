@@ -22,8 +22,8 @@ This project consists of two modules:
   produced by sbthost-nsc. sbthost-runtime is used by applications like
   scalafix at *runtime*, as opposed to compile-time during creation of
   `.semanticdb` files.  sbthost-runtime does a best-effort of converting the
-  emitted offset positions into range positions at "runtime" as well as to
-  disambiguate between names at conflicting positions.
+  emitted offset positions into range positions as well as to disambiguate
+  between names at conflicting positions.
 
 
 
