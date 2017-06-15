@@ -3,6 +3,7 @@ import scala.xml.{Node => XmlNode, NodeSeq => XmlNodeSeq, _}
 import scala.xml.transform.{RewriteRule, RuleTransformer}
 
 name := "sbthostRoot"
+version in ThisBuild := sys.props.getOrElse("sbthost.version", version.in(ThisBuild).value)
 moduleName := "sbthostRoot"
 
 lazy val nsc = project
