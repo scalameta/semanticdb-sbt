@@ -32,8 +32,8 @@ lazy val runtime = project
 lazy val input = project
   .in(file("sbthost/input"))
   .settings(
-    isScala210,
     nonPublishableSettings,
+    isScala210,
     scalacOptions ++= {
       val sbthostPlugin = Keys.`package`.in(nsc, Compile).value
       val sbthostPluginPath = sbthostPlugin.getAbsolutePath
