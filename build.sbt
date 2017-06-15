@@ -3,6 +3,7 @@ import scala.xml.{Node => XmlNode, NodeSeq => XmlNodeSeq, _}
 import scala.xml.transform.{RewriteRule, RuleTransformer}
 
 name := "sbthostRoot"
+nonPublishableSettings
 version in ThisBuild := customVersion.getOrElse(version.in(ThisBuild).value)
 moduleName := "sbthostRoot"
 
@@ -48,7 +49,6 @@ lazy val input = project
 lazy val tests = project
   .in(file("sbthost/tests"))
   .settings(
-    sharedSettings,
     nonPublishableSettings,
     moduleName := "sbthost-tests",
     scalaVersion := scala212,
@@ -123,7 +123,7 @@ lazy val isScala210 = Seq(
   crossScalaVersions := List(scala210)
 )
 
-lazy val sharedSettings = Def.settings(
+lazy val sharedSettings: Seq[Def.Setting[_]] = Seq(
   scalaVersion := scala212,
   crossScalaVersions := List(scala212, scala211),
   organization := "org.scalameta",
@@ -132,16 +132,15 @@ lazy val sharedSettings = Def.settings(
   triggeredMessage.in(ThisBuild) := Watched.clearWhenTriggered
 )
 
-lazy val nonPublishableSettings = Seq(
+lazy val nonPublishableSettings: Seq[Def.Setting[_]] = Seq(
   publishArtifact in (Compile, packageDoc) := false,
   publishArtifact in packageDoc := false,
   sources in (Compile, doc) := Seq.empty,
   publishArtifact := false,
   publish := {}
-)
+) ++ sharedSettings
 
-lazy val publishableSettings = Def.settings(
-  sharedSettings,
+lazy val publishableSettings: Seq[Def.Setting[_]] = Seq(
   publishTo := {
     if (customVersion.isDefined)
       Some("releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2")
@@ -170,7 +169,7 @@ lazy val publishableSettings = Def.settings(
       </developer>
     </developers>
   )
-)
+) ++ sharedSettings
 
 lazy val isFullCrossVersion = Seq(
   crossVersion := CrossVersion.full,
