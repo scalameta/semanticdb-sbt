@@ -2,6 +2,7 @@ package scala.meta.internal.sbthost
 
 import java.nio.file.Path
 import scala.meta.internal.{sbthost => m}
+import scala.reflect.internal.util.NoPosition
 
 sealed trait Input
 object Input {
@@ -44,9 +45,12 @@ trait SymbolOps { self: DatabaseOps =>
       }
       // + deviation from scalameta
       if (isLocal(sym)) {
-        val input = "file://" + sym.pos.source.toString()
-        val point = sym.pos.point
-        return m.Symbol.Local(s"$input@$point..$point")
+        if (sym.pos == NoPosition) return Symbol.None
+        else {
+          val input = "file://" + sym.pos.source.toString()
+          val point = sym.pos.point
+          return m.Symbol.Local(s"$input@$point..$point")
+        }
       }
       // - deviation from scalameta
 
