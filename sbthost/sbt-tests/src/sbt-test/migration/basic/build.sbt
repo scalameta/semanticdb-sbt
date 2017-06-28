@@ -1,6 +1,8 @@
+val foo = "bar"
 // Expressions
-name := "basic"
-organization := "me.vican.jorge"
+name := "basic" + foo
+// bar
+organization := /* buz */ "me.vican.jorge" + foo
 
 // Definitions
-val p1 = project
+val p1 = project.in( /* foo */ file(foo))

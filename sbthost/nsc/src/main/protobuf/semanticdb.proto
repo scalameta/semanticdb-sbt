@@ -4,6 +4,10 @@ syntax = "proto3";
 
 package scala.meta.internal.semantic.schema;
 
+message Database {
+  repeated Attributes attributes = 1;
+}
+
 message Attributes {
   reserved 1;
   reserved 5;

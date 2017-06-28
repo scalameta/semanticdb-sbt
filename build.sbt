@@ -29,12 +29,18 @@ lazy val runtime = project
     description := "Library to patch broken .semanticdb files produced by sbthost-nsc."
   )
 
-val sbtHostScalacOptions = taskKey[Seq[String]]("Scalac options required for the sbt host plugin.")
-sbtHostScalacOptions in Global := {
-  val sbthostPlugin = Keys.`package`.in(nsc, Compile).value
+val sbtHostScalacOptions =
+  settingKey[Seq[String]]("Scalac options required for the sbt host plugin.")
+sbtHostScalacOptions.in(Global) := {
+  val jarname = s"sbthost-nsc_2.10.6-${version.value}.jar"
+  // TODO(olafur) avoid getparent()
+  val sbthostPlugin = classDirectory.in(nsc, Compile).value.getParentFile / jarname
   val sbthostPluginPath = sbthostPlugin.getAbsolutePath
   val dummy = "-Jdummy=" + sbthostPlugin.lastModified
-  s"-Xplugin:$sbthostPluginPath" :: "-Xplugin-require:sbthost" :: "-Yrangepos" :: dummy :: Nil
+  s"-Xplugin:$sbthostPluginPath" ::
+    "-Xplugin-require:sbthost" ::
+    dummy ::
+    Nil
 }
 
 lazy val input = project
@@ -45,9 +51,6 @@ lazy val input = project
     scalacOptions ++= sbtHostScalacOptions.value
   )
 
-val scalacPropertiesFile = settingKey[File]("The file to tell scripted sbthost scalac options.")
-val scalacPropertiesFileGen = taskKey[Unit]("Write sbthost scalac options to the pertinent file.")
-
 lazy val sbtTests = project
   .in(file("sbthost/sbt-tests"))
   .settings(
@@ -57,20 +60,18 @@ lazy val sbtTests = project
     description := "Tests for sbthost that check semantic generation for sbt files.",
     scriptedSettings,
     scriptedBufferLog := false,
-    scalacPropertiesFile := target.value / "sbthost.properties",
-    scalacPropertiesFileGen := {
-      val targetFile = scalacPropertiesFile.value
-      streams.value.log.info(s"Writing sbthost properties to $targetFile")
-      val contents = s"""scalac = ${sbtHostScalacOptions.value.mkString("\007")}
-                        |target = ${classDirectory.in(input, Compile).value}""".stripMargin
-      IO.write(targetFile, contents)
+    scriptedLaunchOpts ++= {
+      val targetDirectory: File = classDirectory.in(Compile).value
+      val options: Seq[String] =
+        s"-P:sbthost:targetroot:$targetDirectory" +:
+          sbtHostScalacOptions.value
+      Seq(
+        "-Xmx1024M",
+        "-XX:MaxPermSize=256M",
+        s"-Dsbthost.config=${options.mkString("\007")}"
+      )
     },
-    scriptedLaunchOpts := {
-      val propertyFilepath = scalacPropertiesFile.value.getAbsolutePath
-      scriptedLaunchOpts.value ++
-        Seq("-Xmx1024M", "-XX:MaxPermSize=256M", s"-Dsbthost.config=${propertyFilepath}")
-    },
-    scripted := scripted.dependsOn(scalacPropertiesFileGen).evaluated
+    scripted := scripted.dependsOn(Keys.`package`.in(nsc, Compile)).evaluated
   )
 
 lazy val tests = project
@@ -80,15 +81,22 @@ lazy val tests = project
     moduleName := "sbthost-tests",
     scalaVersion := scala212,
     description := "Tests for sbthost",
-    test.in(Test) := test
-      .in(Test)
-      .dependsOn(compile.in(input, Compile))
-      .dependsOn(scripted.in(sbtTests).toTask(""))
-      .value,
+    test.in(Test) :=
+      test
+        .in(Test)
+        .dependsOn(
+          compile.in(input, Compile),
+          scripted.in(sbtTests).toTask("")
+        )
+        .dependsOn(Keys.`package`.in(nsc, Compile))
+        .value,
     buildInfoPackage := "scala.meta.tests",
     buildInfoKeys := Seq[BuildInfoKey](
       "targetroot" -> classDirectory.in(input, Compile).value,
-      "sourceroot" -> baseDirectory.in(ThisBuild).value
+      "sourceroot" -> baseDirectory.in(ThisBuild).value,
+      "sbtTargetroot" -> classDirectory.in(sbtTests, Compile).value,
+      "sbtSourceroot" ->
+        sourceDirectory.in(sbtTests).value / "sbt-test" / "migration" / "basic"
     )
   )
   .dependsOn(runtime)
