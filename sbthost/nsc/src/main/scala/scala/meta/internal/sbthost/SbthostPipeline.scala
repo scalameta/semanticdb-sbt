@@ -97,11 +97,10 @@ trait SbthostPipeline extends DatabaseOps { self: SbthostPlugin =>
         )
         val semanticdbOutFile = config.semanticdbPath(filename)
         semanticdbOutFile.toFile.getParentFile.mkdirs()
-
         // If this is not the first compilation unit for this .sbt file, append.
         val options =
-          if (counter == 0 && isSbt) Array.empty[StandardOpenOption]
-          else Array(StandardOpenOption.APPEND)
+          if (counter > 0 && isSbt) Array(StandardOpenOption.APPEND)
+          else Array(StandardOpenOption.CREATE)
         val db = s.Database(List(attributes))
         Files.write(semanticdbOutFile.normalize(), db.toByteArray, options: _*)
       }

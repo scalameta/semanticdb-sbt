@@ -48,6 +48,8 @@ lazy val input = project
   .settings(
     nonPublishableSettings,
     isScala210,
+    compile.in(Compile) :=
+      compile.in(Compile).dependsOn(Keys.`package`.in(nsc, Compile)).value,
     scalacOptions ++= sbtHostScalacOptions.value
   )
 
