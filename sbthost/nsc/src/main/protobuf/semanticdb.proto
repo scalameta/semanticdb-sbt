@@ -1,11 +1,11 @@
 // DO NOT EDIT! This file must match
-// https://github.com/scalameta/scalameta/blob/master/scalameta/semantic/shared/src/main/protobuf/semanticdb.proto
+// https://raw.githubusercontent.com/scalameta/scalameta/master/scalameta/semantic/shared/src/main/protobuf/semanticdb.proto
 syntax = "proto3";
 
 package scala.meta.internal.semantic.schema;
 
 message Database {
-  repeated Attributes attributes = 1;
+  repeated Attributes entries = 1;
 }
 
 message Attributes {
@@ -56,4 +56,5 @@ message Denotation {
 message Sugar {
   Range range = 1;
   string syntax = 2;
+  repeated ResolvedName names = 3;
 }
