@@ -22,9 +22,12 @@ class SbthostPlugin(val global: Global) extends Plugin with SbthostPipeline {
 
   override def processOptions(options: List[String], error: (String) => Unit): Unit = {
     val SetSourceroot = "sourceroot:(.*)".r
+    val SetTargetroot = "targetroot:(.*)".r
     options.foreach {
       case SetSourceroot(sourceroot) =>
         config = config.copy(sourceroot = Paths.get(sourceroot))
+      case SetTargetroot(targetroot) =>
+        config = config.copy(targetroot = Paths.get(targetroot))
       case els =>
         g.reporter.error(g.NoPosition, s"Ignoring unknown scalahost option $els")
     }

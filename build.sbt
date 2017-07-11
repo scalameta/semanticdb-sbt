@@ -29,21 +29,51 @@ lazy val runtime = project
     description := "Library to patch broken .semanticdb files produced by sbthost-nsc."
   )
 
+val sbtHostScalacOptions =
+  settingKey[Seq[String]]("Scalac options required for the sbt host plugin.")
+sbtHostScalacOptions.in(Global) := {
+  val jarname = s"sbthost-nsc_2.10.6-${version.value}.jar"
+  // TODO(olafur) avoid getparent()
+  val sbthostPlugin = classDirectory.in(nsc, Compile).value.getParentFile / jarname
+  val sbthostPluginPath = sbthostPlugin.getAbsolutePath
+  val dummy = "-Jdummy=" + sbthostPlugin.lastModified
+  s"-Xplugin:$sbthostPluginPath" ::
+    "-Xplugin-require:sbthost" ::
+    dummy ::
+    Nil
+}
+
 lazy val input = project
   .in(file("sbthost/input"))
   .settings(
     nonPublishableSettings,
     isScala210,
-    scalacOptions ++= {
-      val sbthostPlugin = Keys.`package`.in(nsc, Compile).value
-      val sbthostPluginPath = sbthostPlugin.getAbsolutePath
-      val dummy = "-Jdummy=" + sbthostPlugin.lastModified
-      s"-Xplugin:$sbthostPluginPath" ::
-        "-Xplugin-require:sbthost" ::
-        "-Yrangepos" ::
-        dummy ::
-        Nil
-    }
+    compile.in(Compile) :=
+      compile.in(Compile).dependsOn(Keys.`package`.in(nsc, Compile)).value,
+    scalacOptions ++= sbtHostScalacOptions.value
+  )
+
+lazy val sbtTests = project
+  .in(file("sbthost/sbt-tests"))
+  .settings(
+    nonPublishableSettings,
+    moduleName := "sbthost-sbt-tests",
+    scalaVersion := scala210,
+    description := "Tests for sbthost that check semantic generation for sbt files.",
+    scriptedSettings,
+    scriptedBufferLog := false,
+    scriptedLaunchOpts ++= {
+      val targetDirectory: File = classDirectory.in(Compile).value
+      val options: Seq[String] =
+        s"-P:sbthost:targetroot:$targetDirectory" +:
+          sbtHostScalacOptions.value
+      Seq(
+        "-Xmx1024M",
+        "-XX:MaxPermSize=256M",
+        s"-Dsbthost.config=${options.mkString("\007")}"
+      )
+    },
+    scripted := scripted.dependsOn(Keys.`package`.in(nsc, Compile)).evaluated
   )
 
 lazy val tests = project
@@ -53,11 +83,22 @@ lazy val tests = project
     moduleName := "sbthost-tests",
     scalaVersion := scala212,
     description := "Tests for sbthost",
-    test.in(Test) := test.in(Test).dependsOn(compile.in(input, Compile)).value,
+    test.in(Test) :=
+      test
+        .in(Test)
+        .dependsOn(
+          compile.in(input, Compile),
+          scripted.in(sbtTests).toTask("")
+        )
+        .dependsOn(Keys.`package`.in(nsc, Compile))
+        .value,
     buildInfoPackage := "scala.meta.tests",
     buildInfoKeys := Seq[BuildInfoKey](
       "targetroot" -> classDirectory.in(input, Compile).value,
-      "sourceroot" -> baseDirectory.in(ThisBuild).value
+      "sourceroot" -> baseDirectory.in(ThisBuild).value,
+      "sbtTargetroot" -> classDirectory.in(sbtTests, Compile).value,
+      "sbtSourceroot" ->
+        sourceDirectory.in(sbtTests).value / "sbt-test" / "migration" / "basic"
     )
   )
   .dependsOn(runtime)
@@ -129,6 +170,7 @@ lazy val sharedSettings: Seq[Def.Setting[_]] = Seq(
   organization := "org.scalameta",
   libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % "test",
   updateOptions := updateOptions.value.withCachedResolution(true),
+  resolvers += Resolver.typesafeIvyRepo("releases"),
   triggeredMessage.in(ThisBuild) := Watched.clearWhenTriggered
 )
 

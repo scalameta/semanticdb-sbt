@@ -1,7 +1,9 @@
 package scala.meta.internal.sbthost
 
 import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.Paths
+import java.nio.file.StandardOpenOption
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.meta.internal.semantic.schema
@@ -15,8 +17,13 @@ import scala.tools.nsc.reporters.StoreReporter
 import scala.meta.internal.semantic.{schema => s}
 
 trait SbthostPipeline extends DatabaseOps { self: SbthostPlugin =>
+  private lazy val pathCount = mutable.Map.empty[Path, Int].withDefaultValue(0)
   object SbthostComponent extends PluginComponent {
     val global: SbthostPipeline.this.global.type = SbthostPipeline.this.global
+    // Select Sbt0137 dialect for scala sources extracted from sbt files
+    private val isSbt = g.getClass.getName.contains("sbt.compiler.Eval")
+    private val detectedDialect =
+      if (isSbt) "Sbt0137" else "Scala210"
     override val runsAfter = List("typer")
     override val runsRightAfter = Some("typer")
     val phaseName = "sbthost"
@@ -74,19 +81,28 @@ trait SbthostPipeline extends DatabaseOps { self: SbthostPlugin =>
           case els =>
             Paths.get(els.file.getAbsoluteFile.toURI)
         }
+        val counter = {
+          val n = pathCount(sourcePath)
+          pathCount(sourcePath) = n + 1
+          n
+        }
         val filename = config.relativePath(sourcePath)
         val attributes = s.Attributes(
           filename = filename.toString,
+          dialect = detectedDialect,
           contents = unit.source.content.mkString,
-          dialect = "Scala210", // TODO: not hardcode
           names = names.result(),
-          messages = getMessages(unit.source).toSeq,
           denotations = denots.result().values.toSeq,
-          sugars = Nil
+          messages = getMessages(unit.source).toSeq
         )
         val semanticdbOutFile = config.semanticdbPath(filename)
         semanticdbOutFile.toFile.getParentFile.mkdirs()
-        Files.write(semanticdbOutFile.normalize(), attributes.toByteArray)
+        // If this is not the first compilation unit for this .sbt file, append.
+        val options =
+          if (counter > 0 && isSbt) Array(StandardOpenOption.APPEND)
+          else Array(StandardOpenOption.CREATE)
+        val db = s.Database(List(attributes))
+        Files.write(semanticdbOutFile.normalize(), db.toByteArray, options: _*)
       }
     }
   }
