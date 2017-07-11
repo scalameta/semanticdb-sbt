@@ -168,6 +168,7 @@ lazy val sharedSettings: Seq[Def.Setting[_]] = Seq(
   organization := "org.scalameta",
   libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % "test",
   updateOptions := updateOptions.value.withCachedResolution(true),
+  resolvers += Resolver.typesafeIvyRepo("releases"),
   triggeredMessage.in(ThisBuild) := Watched.clearWhenTriggered
 )
 
