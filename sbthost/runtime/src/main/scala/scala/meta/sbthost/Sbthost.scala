@@ -7,15 +7,24 @@ import scala.meta.tokens.Token.Ident
 object Sbthost {
   private def label(attrs: Attributes) = attrs.input match {
     case Input.VirtualFile(label, _) => label
+    case els => els.toString
   }
 
+  private val isSbthostDb = Set("Scala210", "Sbt0137")
+
   def patchDatabase(db: Database, sourceroot: AbsolutePath): Database = {
-    val entries = db.entries.groupBy(label).map {
-      case (label, attrs) if label.endsWith(".sbt") =>
-        sbtFile(Input.File(sourceroot.resolve(label)), attrs.toList)
-      case (_, a +: Nil) => scalaFile(a)
+    if (!db.entries.exists(x => isSbthostDb(x.language))) {
+      // Optimization. Some databases can be quite large and most of dbs
+      // from applications like scalafix will not have sbthost semanticdbs.
+      db
+    } else {
+      val entries = db.entries.groupBy(label).map {
+        case (label, attrs) if label.endsWith(".sbt") =>
+          sbtFile(Input.File(sourceroot.resolve(label)), attrs.toList)
+        case (_, a +: Nil) => scalaFile(a)
+      }
+      Database(entries.toList)
     }
-    Database(entries.toList)
   }
 
   private def sbtFile(input: Input, attrs: List[Attributes]): Attributes = {

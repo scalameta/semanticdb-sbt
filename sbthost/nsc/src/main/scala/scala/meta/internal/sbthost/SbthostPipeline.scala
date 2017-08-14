@@ -16,8 +16,8 @@ import scala.tools.nsc.reporters.StoreReporter
 import scala.meta.internal.semantic.{schema => s}
 
 trait SbthostPipeline extends DatabaseOps { self: SbthostPlugin =>
-  private lazy val pathCount = mutable.Map.empty[Path, Int].withDefaultValue(0)
   object SbthostComponent extends PluginComponent {
+    private lazy val pathCount = mutable.Map.empty[Path, Int].withDefaultValue(0)
     val global: SbthostPipeline.this.global.type = SbthostPipeline.this.global
     // Select Sbt0137 dialect for scala sources extracted from sbt files
     private val isSbt = g.getClass.getName.contains("sbt.compiler.Eval")
@@ -43,10 +43,13 @@ trait SbthostPipeline extends DatabaseOps { self: SbthostPlugin =>
             s.Message(range, severity, info.msg)
           }
         case els =>
-          //          global.reporter.warning(NoPosition, s"Unknown reporter $els")
           mutable.LinkedHashSet.empty
       }
     override def newPhase(prev: Phase) = new StdPhase(prev) {
+      if (!isSbt) pathCount.clear()
+      // sbt creates a new phase for each synthetic compilation unit,
+      // even if they origin from the same source.
+      else ()
       def apply(unit: g.CompilationUnit): Unit = {
         val names = ListBuffer.newBuilder[s.ResolvedName]
         val denots = mutable.Map.empty[String, s.ResolvedSymbol]
@@ -99,7 +102,7 @@ trait SbthostPipeline extends DatabaseOps { self: SbthostPlugin =>
         // If this is not the first compilation unit for this .sbt file, append.
         val options =
           if (counter > 0 && isSbt) Array(StandardOpenOption.APPEND)
-          else Array(StandardOpenOption.CREATE)
+          else Array(StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
         val db = s.Database(List(attributes))
         Files.write(semanticdbOutFile.normalize(), db.toByteArray, options: _*)
       }
