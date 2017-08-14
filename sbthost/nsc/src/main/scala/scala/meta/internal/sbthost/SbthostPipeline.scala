@@ -17,6 +17,7 @@ import scala.meta.internal.semantic.{schema => s}
 
 trait SbthostPipeline extends DatabaseOps { self: SbthostPlugin =>
   object SbthostComponent extends PluginComponent {
+    private lazy val pathCount = mutable.Map.empty[Path, Int].withDefaultValue(0)
     val global: SbthostPipeline.this.global.type = SbthostPipeline.this.global
     // Select Sbt0137 dialect for scala sources extracted from sbt files
     private val isSbt = g.getClass.getName.contains("sbt.compiler.Eval")
@@ -42,11 +43,13 @@ trait SbthostPipeline extends DatabaseOps { self: SbthostPlugin =>
             s.Message(range, severity, info.msg)
           }
         case els =>
-          //          global.reporter.warning(NoPosition, s"Unknown reporter $els")
           mutable.LinkedHashSet.empty
       }
     override def newPhase(prev: Phase) = new StdPhase(prev) {
-      private lazy val pathCount = mutable.Map.empty[Path, Int].withDefaultValue(0)
+      if (!isSbt) pathCount.clear()
+      // sbt creates a new phase for each synthetic compilation unit,
+      // even if they origin from the same source.
+      else ()
       def apply(unit: g.CompilationUnit): Unit = {
         val names = ListBuffer.newBuilder[s.ResolvedName]
         val denots = mutable.Map.empty[String, s.ResolvedSymbol]
