@@ -16,7 +16,6 @@ import scala.tools.nsc.reporters.StoreReporter
 import scala.meta.internal.semantic.{schema => s}
 
 trait SbthostPipeline extends DatabaseOps { self: SbthostPlugin =>
-  private lazy val pathCount = mutable.Map.empty[Path, Int].withDefaultValue(0)
   object SbthostComponent extends PluginComponent {
     val global: SbthostPipeline.this.global.type = SbthostPipeline.this.global
     // Select Sbt0137 dialect for scala sources extracted from sbt files
@@ -47,6 +46,7 @@ trait SbthostPipeline extends DatabaseOps { self: SbthostPlugin =>
           mutable.LinkedHashSet.empty
       }
     override def newPhase(prev: Phase) = new StdPhase(prev) {
+      private lazy val pathCount = mutable.Map.empty[Path, Int].withDefaultValue(0)
       def apply(unit: g.CompilationUnit): Unit = {
         val names = ListBuffer.newBuilder[s.ResolvedName]
         val denots = mutable.Map.empty[String, s.ResolvedSymbol]
@@ -99,7 +99,7 @@ trait SbthostPipeline extends DatabaseOps { self: SbthostPlugin =>
         // If this is not the first compilation unit for this .sbt file, append.
         val options =
           if (counter > 0 && isSbt) Array(StandardOpenOption.APPEND)
-          else Array(StandardOpenOption.CREATE)
+          else Array(StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
         val db = s.Database(List(attributes))
         Files.write(semanticdbOutFile.normalize(), db.toByteArray, options: _*)
       }
