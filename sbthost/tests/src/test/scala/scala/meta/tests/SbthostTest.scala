@@ -3,7 +3,6 @@ package tests
 
 import java.io.File
 import scala.meta.sbthost.Sbthost
-import org.scalameta.logger
 import org.scalatest.FunSuite
 import org.scalatest.exceptions.TestFailedException
 
