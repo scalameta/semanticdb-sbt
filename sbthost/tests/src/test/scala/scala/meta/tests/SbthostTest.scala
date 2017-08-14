@@ -2,57 +2,30 @@ package scala.meta
 package tests
 
 import java.io.File
-import scala.meta.internal.io.FileIO
-import scala.meta.internal.semantic.{schema => s}
-import scala.meta.internal.semantic.{vfs => v}
 import scala.meta.sbthost.Sbthost
-import com.google.protobuf.CodedInputStream
-import com.trueaccord.scalapb.LiteParser
-import org.scalameta.logger
 import org.scalatest.FunSuite
 import org.scalatest.exceptions.TestFailedException
 
 abstract class SbthostTest(sourcerootFile: File, targetroot: File) extends FunSuite {
   val sourceroot = AbsolutePath(sourcerootFile)
 
-  val mirror = {
-    val files = FileIO.listAllFilesRecursively(
-      AbsolutePath(targetroot).resolve("META-INF").resolve("semanticdb"))
-    val entries = files.flatMap { entry =>
-      // semanticdb.proto currently doesn't have a s.Database message, see
-      // https://github.com/scalameta/scalameta/issues/943
-      // We roll our own serializer until that is fixed.
-      var done = false
-      val stream = CodedInputStream.newInstance(entry.readAllBytes)
-      val attributes = Vector.newBuilder[s.Attributes]
-      while (!done) {
-        val tag = stream.readTag()
-        tag match {
-          case 0 => done = true
-          case _ => attributes += LiteParser.readMessage(stream, s.Attributes.defaultInstance)
-        }
-      }
-      attributes.result()
-    }
-    val db = s.Database(entries.toList)
-    val sp = Sourcepath(sourceroot)
-    val broken = db.toMeta(Some(sp))
-    Sbthost.patchMirror(broken, sourceroot)
+  val mirror: Database = {
+    val broken = Database.load(Classpath(AbsolutePath(targetroot)))
+    Sbthost.patchDatabase(broken, sourceroot)
   }
 
   private val sanitize = "_empty_\\.(\\$[^\\.]+)\\.".r
   def checkNames(path: String, expected: String): Unit = {
     test("names") {
-      val (_, attrs) = mirror.entries.find(_._1.toString.contains(path)).getOrElse {
+      val attrs = mirror.entries.find(_.input.toString.contains(path)).getOrElse {
         throw new TestFailedException(s"No input matches $path!", 1)
       }
       val obtained = attrs.copy(
         messages = Nil,
         sugars = Nil,
-        denotations = Nil
+        symbols = Nil
       )
       val sanitized = sanitize.replaceAllIn(obtained.syntax, "<>.")
-      logger.elem(sanitized)
       assert(sanitized.trim == expected.trim)
     }
   }
@@ -66,7 +39,7 @@ abstract class SbthostTest(sourcerootFile: File, targetroot: File) extends FunSu
 class ScalaFileTest extends SbthostTest(BuildInfo.sourceroot, BuildInfo.targetroot) {
   checkNames(
     "CompiledWith",
-    """Dialect:
+    """Language:
       |Scala210
       |
       |Names:
@@ -90,7 +63,7 @@ class SbtFileTest extends SbthostTest(BuildInfo.sbtSourceroot, BuildInfo.sbtTarg
   checkNames(
     "build.sbt",
     """
-      |Dialect:
+      |Language:
       |Sbt0137
       |
       |Names:

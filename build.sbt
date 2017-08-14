@@ -154,7 +154,7 @@ lazy val mergeSettings = Def.settings(
   }
 )
 
-lazy val scalametaVersion = "1.8.0"
+lazy val scalametaVersion = "2.0.0-M2"
 lazy val scala210 = "2.10.6"
 lazy val scala211 = "2.11.11"
 lazy val scala212 = "2.12.2"
