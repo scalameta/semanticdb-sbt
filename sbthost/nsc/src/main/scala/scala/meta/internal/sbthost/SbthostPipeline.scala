@@ -6,7 +6,6 @@ import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-import scala.meta.internal.semantic.schema
 import scala.reflect.internal.util.OffsetPosition
 import scala.reflect.internal.util.RangePosition
 import scala.reflect.internal.util.SourceFile
@@ -32,8 +31,8 @@ trait SbthostPipeline extends DatabaseOps { self: SbthostPlugin =>
         case reporter: StoreReporter =>
           reporter.infos.withFilter(_.pos.source == source).map { info =>
             val range = Option(info.pos).collect {
-              case p: RangePosition => s.Range(p.start, p.end)
-              case p: OffsetPosition => s.Range(p.point, p.point)
+              case p: RangePosition => s.Position(p.start, p.end)
+              case p: OffsetPosition => s.Position(p.point, p.point)
             }
             val severity = info.severity.id match {
               case 0 => s.Message.Severity.INFO
@@ -50,7 +49,7 @@ trait SbthostPipeline extends DatabaseOps { self: SbthostPlugin =>
     override def newPhase(prev: Phase) = new StdPhase(prev) {
       def apply(unit: g.CompilationUnit): Unit = {
         val names = ListBuffer.newBuilder[s.ResolvedName]
-        val denots = mutable.Map.empty[String, s.SymbolDenotation]
+        val denots = mutable.Map.empty[String, s.ResolvedSymbol]
         def getNames(): Unit = {
           object traverser extends g.Traverser {
             def isValidSymbol(symbol: g.Symbol) =
@@ -62,11 +61,11 @@ trait SbthostPipeline extends DatabaseOps { self: SbthostPlugin =>
                   isValidSymbol(tree.symbol.owner)) {
                 val symbol = tree.symbol.toSemantic
                 val symbolSyntax = symbol.syntax
-                val range = s.Range(tree.pos.point, tree.pos.point)
+                val range = s.Position(tree.pos.point, tree.pos.point)
                 names += s.ResolvedName(Some(range), symbolSyntax)
                 if (!denots.contains(symbolSyntax)) {
                   val denot = tree.symbol.toDenotation
-                  denots(symbolSyntax) = s.SymbolDenotation(symbol.syntax, Some(denot))
+                  denots(symbolSyntax) = s.ResolvedSymbol(symbol.syntax, Some(denot))
                 }
               }
               super.traverse(tree)
@@ -89,10 +88,10 @@ trait SbthostPipeline extends DatabaseOps { self: SbthostPlugin =>
         val filename = config.relativePath(sourcePath)
         val attributes = s.Attributes(
           filename = filename.toString,
-          dialect = detectedDialect,
+          language = detectedDialect,
           contents = unit.source.content.mkString,
           names = names.result(),
-          denotations = denots.result().values.toSeq,
+          symbols = denots.result().values.toSeq,
           messages = getMessages(unit.source).toSeq
         )
         val semanticdbOutFile = config.semanticdbPath(filename)
