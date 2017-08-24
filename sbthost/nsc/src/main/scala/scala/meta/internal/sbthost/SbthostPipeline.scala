@@ -45,7 +45,9 @@ trait SbthostPipeline extends DatabaseOps { self: SbthostPlugin =>
         case els =>
           mutable.LinkedHashSet.empty
       }
+    val isVisitedTree = mutable.Set.empty[g.Tree]
     override def newPhase(prev: Phase) = new StdPhase(prev) {
+      isVisitedTree.clear()
       if (!isSbt) pathCount.clear()
       // sbt creates a new phase for each synthetic compilation unit,
       // even if they origin from the same source.
@@ -53,30 +55,52 @@ trait SbthostPipeline extends DatabaseOps { self: SbthostPlugin =>
       def apply(unit: g.CompilationUnit): Unit = {
         val names = ListBuffer.newBuilder[s.ResolvedName]
         val denots = mutable.Map.empty[String, s.ResolvedSymbol]
-        def getNames(): Unit = {
+        def isValidSymbol(symbol: g.Symbol) =
+          symbol.ne(null) && symbol != g.NoSymbol
+        def computeNames(): Unit = {
           object traverser extends g.Traverser {
-            def isValidSymbol(symbol: g.Symbol) =
-              symbol.ne(null) && symbol != g.NoSymbol
             override def traverse(tree: g.Tree): Unit = {
-              if (tree.pos.isDefined &&
-                  tree.hasSymbol &&
-                  isValidSymbol(tree.symbol) &&
-                  isValidSymbol(tree.symbol.owner)) {
-                val symbol = tree.symbol.toSemantic
-                val symbolSyntax = symbol.syntax
-                val range = s.Position(tree.pos.point, tree.pos.point)
-                names += s.ResolvedName(Some(range), symbolSyntax)
-                if (!denots.contains(symbolSyntax)) {
-                  val denot = tree.symbol.toDenotation
-                  denots(symbolSyntax) = s.ResolvedSymbol(symbol.syntax, Some(denot))
+              // Macro expandees can have cycles,
+              if (isVisitedTree(tree)) return else isVisitedTree += tree
+
+              def traverseMacroExpandees(): Unit = {
+                tree.attachments.all.collect {
+                  case att: g.MacroExpansionAttachment =>
+                    traverse(att.original)
                 }
               }
+              def traverseTypeTree(): Unit = {
+                tree match {
+                  case gtree: g.TypeTree if gtree.original != null =>
+                    traverse(gtree.original)
+                  case _ =>
+                }
+              }
+              def emitResolvedNames(): Unit = {
+                if (tree.pos.isDefined &&
+                    tree.hasSymbol &&
+                    isValidSymbol(tree.symbol) &&
+                    isValidSymbol(tree.symbol.owner)) {
+                  val symbol = tree.symbol.toSemantic
+                  val symbolSyntax = symbol.syntax
+                  val range = s.Position(tree.pos.point, tree.pos.point)
+                  names += s.ResolvedName(Some(range), symbolSyntax)
+                  if (!denots.contains(symbolSyntax)) {
+                    val denot = tree.symbol.toDenotation
+                    denots(symbolSyntax) = s.ResolvedSymbol(symbol.syntax, Some(denot))
+                  }
+                }
+              }
+
+              traverseMacroExpandees()
+              traverseTypeTree()
+              emitResolvedNames()
               super.traverse(tree)
             }
           }
           traverser(unit.body)
         }
-        getNames()
+        computeNames()
         val sourcePath = unit.source.file match {
           case f: VirtualFile =>
             Paths.get(f.path)
