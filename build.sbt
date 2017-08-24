@@ -48,6 +48,7 @@ lazy val input = project
   .settings(
     nonPublishableSettings,
     isScala210,
+    sbtPlugin := true,
     compile.in(Compile) :=
       compile.in(Compile).dependsOn(Keys.`package`.in(nsc, Compile)).value,
     scalacOptions ++= sbtHostScalacOptions.value
@@ -83,13 +84,12 @@ lazy val tests = project
     moduleName := "sbthost-tests",
     scalaVersion := scala212,
     description := "Tests for sbthost",
+    compileInputs.in(Compile, compile) :=
+      compileInputs.in(Compile, compile).dependsOn(compile.in(input, Compile)).value,
     test.in(Test) :=
       test
         .in(Test)
-        .dependsOn(
-          compile.in(input, Compile),
-          scripted.in(sbtTests).toTask("")
-        )
+        .dependsOn(scripted.in(sbtTests).toTask(""))
         .dependsOn(Keys.`package`.in(nsc, Compile))
         .value,
     buildInfoPackage := "scala.meta.tests",
@@ -157,7 +157,7 @@ lazy val mergeSettings = Def.settings(
 lazy val scalametaVersion = "2.0.0-M2"
 lazy val scala210 = "2.10.6"
 lazy val scala211 = "2.11.11"
-lazy val scala212 = "2.12.2"
+lazy val scala212 = "2.12.3"
 
 lazy val isScala210 = Seq(
   scalaVersion := scala210,
