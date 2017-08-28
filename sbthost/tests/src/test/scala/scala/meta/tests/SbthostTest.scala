@@ -5,8 +5,11 @@ import java.io.File
 import scala.meta.sbthost.Sbthost
 import org.scalatest.FunSuite
 import org.scalatest.exceptions.TestFailedException
+import scala.meta.testkit.DiffAssertions
 
-abstract class SbthostTest(sourcerootFile: File, targetroot: File) extends FunSuite {
+abstract class SbthostTest(sourcerootFile: File, targetroot: File)
+    extends FunSuite
+    with DiffAssertions {
   val sourceroot = AbsolutePath(sourcerootFile)
 
   val mirror: Database = {
@@ -17,16 +20,16 @@ abstract class SbthostTest(sourcerootFile: File, targetroot: File) extends FunSu
   private val sanitize = "_empty_\\.(\\$[^\\.]+)\\.".r
   def checkNames(path: String, expected: String): Unit = {
     test("names") {
-      val attrs = mirror.entries.find(_.input.toString.contains(path)).getOrElse {
+      val attrs = mirror.documents.find(_.input.toString.contains(path)).getOrElse {
         throw new TestFailedException(s"No input matches $path!", 1)
       }
       val obtained = attrs.copy(
         messages = Nil,
-        sugars = Nil,
+        synthetics = Nil,
         symbols = Nil
       )
       val sanitized = sanitize.replaceAllIn(obtained.syntax, "<>.")
-      assert(sanitized.trim == expected.trim)
+      assertNoDiff(sanitized, expected)
     }
   }
 
@@ -68,6 +71,7 @@ class ScalaFileTest extends SbthostTest(BuildInfo.sourceroot, BuildInfo.targetro
     """.stripMargin
   )
 }
+
 class SbtFileTest extends SbthostTest(BuildInfo.sbtSourceroot, BuildInfo.sbtTargetroot) {
   checkNames(
     "build.sbt",
@@ -76,15 +80,15 @@ class SbtFileTest extends SbthostTest(BuildInfo.sbtSourceroot, BuildInfo.sbtTarg
       |Sbt0137
       |
       |Names:
-      |[4..7): foo => _root_.<>.foo.
+      |[4..7): foo => <>.foo.
       |[31..35): name => _root_.sbt.Keys.name.
       |[36..38): := => _root_.sbt.SettingKey#`:=`(Ljava/lang/Object;)Lsbt/Init/Setting;.
       |[47..48): + => _root_.java.lang.String#`+`(Ljava/lang/Object;)Ljava/lang/String;.
-      |[49..52): foo => _root_.<>.foo.
+      |[49..52): foo => <>.foo.
       |[60..72): organization => _root_.sbt.Keys.organization.
       |[73..75): := => _root_.sbt.SettingKey#`:=`(Ljava/lang/Object;)Lsbt/Init/Setting;.
       |[103..104): + => _root_.java.lang.String#`+`(Ljava/lang/Object;)Ljava/lang/String;.
-      |[105..108): foo => _root_.<>.foo.
+      |[105..108): foo => <>.foo.
       |[110..114): test => _root_.sbt.Keys.test.
       |[115..117): := => _root_.sbt.Scoped.DefinableTask#`:=`(Ljava/lang/Object;)Lsbt/Init/Setting;.
       |[118..121): Def => _root_.sbt.Def.

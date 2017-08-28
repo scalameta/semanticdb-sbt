@@ -13,7 +13,7 @@ import scala.tools.nsc.Phase
 import scala.tools.nsc.io.VirtualFile
 import scala.tools.nsc.plugins.PluginComponent
 import scala.tools.nsc.reporters.StoreReporter
-import org.langmeta.internal.semantic.{schema => s}
+import org.langmeta.internal.semanticdb.{schema => s}
 
 trait SbthostPipeline extends DatabaseOps { self: SbthostPlugin =>
   object SbthostComponent extends PluginComponent {
@@ -84,7 +84,7 @@ trait SbthostPipeline extends DatabaseOps { self: SbthostPlugin =>
                   val symbol = tree.symbol.toSemantic
                   val symbolSyntax = symbol.syntax
                   val range = s.Position(tree.pos.point, tree.pos.point)
-                  names += s.ResolvedName(Some(range), symbolSyntax)
+                  names += s.ResolvedName(Some(range), symbolSyntax, false)
                   if (!denots.contains(symbolSyntax)) {
                     val denot = tree.symbol.toDenotation
                     denots(symbolSyntax) = s.ResolvedSymbol(symbol.syntax, Some(denot))
@@ -113,7 +113,7 @@ trait SbthostPipeline extends DatabaseOps { self: SbthostPlugin =>
           n
         }
         val filename = config.relativePath(sourcePath)
-        val attributes = s.Attributes(
+        val attributes = s.Document(
           filename = filename.toString,
           language = detectedDialect,
           contents = unit.source.content.mkString,

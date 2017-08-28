@@ -1,15 +1,7 @@
 package scala.meta.internal.sbthost
 
-import java.nio.file.Path
-
-import scala.meta.internal.{sbthost => m}
+import org.{langmeta => m}
 import scala.reflect.internal.util.NoPosition
-
-sealed trait Input
-object Input {
-  case object None extends Input
-  case class File(path: Path) extends Input
-}
 
 trait InputOps { self: DatabaseOps =>
   implicit class XtensionGPosition(pos: g.Position) {
@@ -30,9 +22,12 @@ trait SymbolOps { self: DatabaseOps =>
   implicit class XtensionGSymbolMSymbol(sym: g.Symbol) {
     def toSemantic: m.Symbol = {
       if (sym == null || sym == g.NoSymbol) return m.Symbol.None
+      // + semanticdb-scalac deviation
+      if (sym.isRoot) return m.Symbol.Global(m.Symbol.None, m.Signature.Term("_root_"))
+      // if (sym.isRootPackage) return m.Symbol.Global(m.Symbol.None, m.Signature.Term("_root_"))
+      // + semanticdb-scalac deviation
       if (sym.isOverloaded) return m.Symbol.Multi(sym.alternatives.map(_.toSemantic))
       if (sym.isModuleClass) return sym.asClass.module.toSemantic
-      if (sym.isRootPackage) return m.Symbol.Global(m.Symbol.None, m.Signature.Term("_root_"))
       if (sym.isEmptyPackage) return m.Symbol.Global(m.Symbol.None, m.Signature.Term("_empty_"))
 
       def isLocal(sym: g.Symbol): Boolean = {
@@ -46,7 +41,7 @@ trait SymbolOps { self: DatabaseOps =>
       }
       // + deviation from scalameta
       if (isLocal(sym)) {
-        if (sym.pos == NoPosition) return Symbol.None
+        if (sym.pos == NoPosition) return m.Symbol.None
         else {
           val input = "file://" + sym.pos.source.toString()
           val point = sym.pos.point
@@ -55,8 +50,7 @@ trait SymbolOps { self: DatabaseOps =>
       }
       // - deviation from scalameta
 
-      val owner =
-        sym.owner.toSemantic
+      val owner = sym.owner.toSemantic
       val signature = {
         def name(sym: g.Symbol) = sym.name.decoded.stripSuffix(g.nme.LOCAL_SUFFIX_STRING)
         def jvmSignature(sym: g.MethodSymbol): String = {

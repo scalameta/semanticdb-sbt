@@ -5,7 +5,7 @@ import scala.collection.mutable
 import scala.meta.tokens.Token.Ident
 
 object Sbthost {
-  private def label(attrs: Attributes) = attrs.input match {
+  private def label(doc: Document) = doc.input match {
     case Input.VirtualFile(label, _) => label
     case els => els.toString
   }
@@ -13,21 +13,21 @@ object Sbthost {
   private val isSbthostDb = Set("Scala210", "Sbt0137")
 
   def patchDatabase(db: Database, sourceroot: AbsolutePath): Database = {
-    if (!db.entries.exists(x => isSbthostDb(x.language))) {
+    if (!db.documents.exists(x => isSbthostDb(x.language))) {
       // Optimization. Some databases can be quite large and most of dbs
       // from applications like scalafix will not have sbthost semanticdbs.
       db
     } else {
-      val entries = db.entries.groupBy(label).map {
-        case (label, attrs) if label.endsWith(".sbt") =>
-          sbtFile(Input.File(sourceroot.resolve(label)), attrs.toList)
+      val entries = db.documents.groupBy(label).map {
+        case (label, doc) if label.endsWith(".sbt") =>
+          sbtFile(Input.File(sourceroot.resolve(label)), doc.toList)
         case (_, a +: Nil) => scalaFile(a)
       }
       Database(entries.toList)
     }
   }
 
-  private def sbtFile(input: Input, attrs: List[Attributes]): Attributes = {
+  private def sbtFile(input: Input, doc: List[Document]): Document = {
     val source = dialects.Sbt0137(input).parse[Source].get
     val (definitions, exprs) = source.stats.partition(_.is[Defn])
     val tokenMap: Map[Token, (Int, Token)] = {
@@ -58,7 +58,7 @@ object Sbthost {
       }
       builder.result()
     }
-    val lookup: Map[(Int, Int), List[ResolvedName]] = attrs.zipWithIndex
+    val lookup: Map[(Int, Int), List[ResolvedName]] = doc.zipWithIndex
       .flatMap {
         case (as, i) =>
           as.names.map {
@@ -82,9 +82,9 @@ object Sbthost {
           case (idx, tok) =>
             lookup.get(idx -> tok.pos.start).foreach { syms =>
               syms.foreach { r =>
-                val l = label(r.sym)
+                val l = label(r.symbol)
                 if (l == value && !taken(t.pos)) {
-                  buffer += r.copy(pos = t.pos)
+                  buffer += r.copy(position = t.pos)
                   taken += t.pos
                 }
               }
@@ -92,28 +92,28 @@ object Sbthost {
         }
       case _ =>
     }
-    val attributes = Attributes(
+    val document = Document(
       input = input,
       language = dialects.Sbt0137.toString(),
       names = buffer.result(),
-      messages = attrs.flatMap(_.messages),
-      symbols = attrs.flatMap(_.symbols),
-      sugars = attrs.flatMap(_.sugars)
+      messages = doc.flatMap(_.messages),
+      symbols = doc.flatMap(_.symbols),
+      synthetics = doc.flatMap(_.synthetics)
     )
-    attributes
+    document
   }
 
-  private def scalaFile(attrs: Attributes): Attributes = {
-    val endByStart = attrs.input.tokenize.get.collect {
+  private def scalaFile(doc: Document): Document = {
+    val endByStart = doc.input.tokenize.get.collect {
       case t: Ident => t.pos.start -> (t -> t.pos.end)
     }.toMap
     val isTaken = mutable.Set.empty[Int]
-    val names: List[ResolvedName] = attrs.names.collect {
+    val names: List[ResolvedName] = doc.names.collect {
       case ResolvedName(pos @ Position.Range(_, start, _), symbol, isBinder)
           if !isTaken(start) && endByStart.contains(start) =>
         isTaken += start
         ResolvedName(pos.copy(end = endByStart(start)._2), symbol, isBinder)
     }
-    attrs.copy(names = names)
+    doc.copy(names = names)
   }
 }

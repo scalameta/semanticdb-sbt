@@ -1,4 +1,3 @@
-import com.trueaccord.scalapb.compiler.Version.scalapbVersion
 import scala.xml.{Node => XmlNode, NodeSeq => XmlNodeSeq, _}
 import scala.xml.transform.{RewriteRule, RuleTransformer}
 
@@ -16,7 +15,10 @@ lazy val nsc = project
     moduleName := "sbthost-nsc",
     mergeSettings,
     description := "Compiler plugin to produce .semanticdb files for sbt builds.",
-    libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
+    libraryDependencies ++= List(
+      "org.scalameta" %% "langmeta" % scalametaVersion,
+      "org.scala-lang" % "scala-compiler" % scalaVersion.value
+    )
   )
 
 lazy val runtime = project
@@ -83,6 +85,7 @@ lazy val tests = project
     moduleName := "sbthost-tests",
     scalaVersion := scala212,
     description := "Tests for sbthost",
+    libraryDependencies += "org.scalameta" %% "testkit" % scalametaVersion % Test,
     compileInputs.in(Compile, compile) :=
       compileInputs.in(Compile, compile).dependsOn(compile.in(input, Compile)).value,
     test.in(Test) :=
@@ -143,7 +146,7 @@ lazy val mergeSettings = Def.settings(
   }
 )
 
-lazy val scalametaVersion = "2.0.0-M2"
+lazy val scalametaVersion = "2.0.0-M3"
 lazy val scala210 = "2.10.6"
 lazy val scala211 = "2.11.11"
 lazy val scala212 = "2.12.3"
@@ -160,7 +163,7 @@ lazy val sharedSettings: Seq[Def.Setting[_]] = Seq(
   libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % "test",
   updateOptions := updateOptions.value.withCachedResolution(true),
   resolvers += Resolver.typesafeIvyRepo("releases"),
-  resolvers += Resolver.bintrayRepo("scalameta", "maven"),
+  resolvers += Resolver.sonatypeRepo("releases"),
   triggeredMessage.in(ThisBuild) := Watched.clearWhenTriggered
 )
 
