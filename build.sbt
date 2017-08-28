@@ -1,4 +1,3 @@
-import com.trueaccord.scalapb.compiler.Version.scalapbVersion
 import scala.xml.{Node => XmlNode, NodeSeq => XmlNodeSeq, _}
 import scala.xml.transform.{RewriteRule, RuleTransformer}
 
@@ -13,32 +12,34 @@ lazy val nsc = project
     publishableSettings,
     isFullCrossVersion,
     isScala210,
-    moduleName := "sbthost-nsc",
+    moduleName := "semanticdb-sbt",
     mergeSettings,
     description := "Compiler plugin to produce .semanticdb files for sbt builds.",
-    libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
-    protobufSettings
+    libraryDependencies ++= List(
+      "org.scalameta" %% "langmeta" % scalametaVersion,
+      "org.scala-lang" % "scala-compiler" % scalaVersion.value
+    )
   )
 
 lazy val runtime = project
   .in(file("sbthost/runtime"))
   .settings(
     publishableSettings,
-    moduleName := "sbthost-runtime",
+    moduleName := "semanticdb-sbt-runtime",
     libraryDependencies += "org.scalameta" %% "scalameta" % scalametaVersion,
-    description := "Library to patch broken .semanticdb files produced by sbthost-nsc."
+    description := "Library to patch broken .semanticdb files produced by semanticdb-sbt."
   )
 
 val sbtHostScalacOptions =
   settingKey[Seq[String]]("Scalac options required for the sbt host plugin.")
 sbtHostScalacOptions.in(Global) := {
-  val jarname = s"sbthost-nsc_2.10.6-${version.value}.jar"
+  val jarname = s"semanticdb-sbt_2.10.6-${version.value}.jar"
   // TODO(olafur) avoid getparent()
   val sbthostPlugin = classDirectory.in(nsc, Compile).value.getParentFile / jarname
   val sbthostPluginPath = sbthostPlugin.getAbsolutePath
   val dummy = "-Jdummy=" + sbthostPlugin.lastModified
   s"-Xplugin:$sbthostPluginPath" ::
-    "-Xplugin-require:sbthost" ::
+    "-Xplugin-require:semanticdb-sbt" ::
     dummy ::
     Nil
 }
@@ -66,7 +67,7 @@ lazy val sbtTests = project
     scriptedLaunchOpts ++= {
       val targetDirectory: File = classDirectory.in(Compile).value
       val options: Seq[String] =
-        s"-P:sbthost:targetroot:$targetDirectory" +:
+        s"-P:semanticdb-sbt:targetroot:$targetDirectory" +:
           sbtHostScalacOptions.value
       Seq(
         "-Xmx1024M",
@@ -84,6 +85,7 @@ lazy val tests = project
     moduleName := "sbthost-tests",
     scalaVersion := scala212,
     description := "Tests for sbthost",
+    libraryDependencies += "org.scalameta" %% "testkit" % scalametaVersion % Test,
     compileInputs.in(Compile, compile) :=
       compileInputs.in(Compile, compile).dependsOn(compile.in(input, Compile)).value,
     test.in(Test) :=
@@ -103,16 +105,6 @@ lazy val tests = project
   )
   .dependsOn(runtime)
   .enablePlugins(BuildInfoPlugin)
-
-lazy val protobufSettings = Seq(
-  PB.targets.in(Compile) := Seq(
-    scalapb.gen(
-      flatPackage = true // Don't append filename to package
-    ) -> sourceManaged.in(Compile).value
-  ),
-  PB.protoSources.in(Compile) := Seq(file("sbthost/nsc/src/main/protobuf")),
-  libraryDependencies += "com.trueaccord.scalapb" %% "scalapb-runtime" % scalapbVersion
-)
 
 lazy val mergeSettings = Def.settings(
   test.in(assembly) := {},
@@ -154,7 +146,7 @@ lazy val mergeSettings = Def.settings(
   }
 )
 
-lazy val scalametaVersion = "2.0.0-M2"
+lazy val scalametaVersion = "2.0.0-M3"
 lazy val scala210 = "2.10.6"
 lazy val scala211 = "2.11.11"
 lazy val scala212 = "2.12.3"
@@ -171,7 +163,7 @@ lazy val sharedSettings: Seq[Def.Setting[_]] = Seq(
   libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % "test",
   updateOptions := updateOptions.value.withCachedResolution(true),
   resolvers += Resolver.typesafeIvyRepo("releases"),
-  resolvers += Resolver.bintrayRepo("scalameta", "maven"),
+  resolvers += Resolver.sonatypeRepo("releases"),
   triggeredMessage.in(ThisBuild) := Watched.clearWhenTriggered
 )
 

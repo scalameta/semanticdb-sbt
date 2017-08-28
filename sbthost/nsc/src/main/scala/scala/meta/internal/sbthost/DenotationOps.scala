@@ -1,7 +1,7 @@
 package scala.meta.internal.sbthost
 
 import scala.reflect.internal.{Flags => gf}
-import scala.meta.internal.semantic.{schema => s}
+import org.langmeta.internal.semanticdb.{schema => s}
 
 object mf {
   final val VAL: Long = 1 << 0

@@ -3,7 +3,7 @@ package scala.meta.internal.sbthost
 import java.nio.file.Paths
 import scala.meta.internal.sbthost
 import scala.meta.internal.sbthost
-import scala.meta.internal.semantic.{schema => s}
+import org.langmeta.internal.semanticdb.{schema => s}
 import scala.tools.nsc.Global
 import scala.tools.nsc.plugins.Plugin
 import scala.tools.nsc.plugins.PluginComponent
@@ -11,7 +11,7 @@ import scala.tools.nsc.plugins.PluginComponent
 // NOTE: This plugin is only intended to be used by sbt 0.13 for sbt 1.0 migration.
 // Scalahost is a far superior plugin and should be used instead of sbthost.
 class SbthostPlugin(val global: Global) extends Plugin with SbthostPipeline {
-  val name = "sbthost"
+  val name = "semanticdb-sbt"
   val description = "Compiler plugin for sbt v1.0 migration."
   val components = List[PluginComponent](SbthostComponent)
 

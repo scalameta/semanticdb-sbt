@@ -1,4 +1,4 @@
 <plugin>
-  <name>sbthost</name>
+  <name>semanticdb-sbt</name>
   <classname>scala.meta.internal.sbthost.SbthostPlugin</classname>
 </plugin>
