@@ -25,7 +25,7 @@ trait SbthostPipeline extends DatabaseOps { self: SbthostPlugin =>
       if (isSbt) "Sbt0137" else "Scala210"
     override val runsAfter = List("typer")
     override val runsRightAfter = Some("typer")
-    val phaseName = "sbthost"
+    val phaseName = "semanticdb-sbt"
     def getMessages(source: SourceFile): mutable.LinkedHashSet[s.Message] =
       g.reporter match {
         case reporter: StoreReporter =>

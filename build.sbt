@@ -12,7 +12,7 @@ lazy val nsc = project
     publishableSettings,
     isFullCrossVersion,
     isScala210,
-    moduleName := "sbthost-nsc",
+    moduleName := "semanticdb-sbt",
     mergeSettings,
     description := "Compiler plugin to produce .semanticdb files for sbt builds.",
     libraryDependencies ++= List(
@@ -25,21 +25,21 @@ lazy val runtime = project
   .in(file("sbthost/runtime"))
   .settings(
     publishableSettings,
-    moduleName := "sbthost-runtime",
+    moduleName := "semanticdb-sbt-runtime",
     libraryDependencies += "org.scalameta" %% "scalameta" % scalametaVersion,
-    description := "Library to patch broken .semanticdb files produced by sbthost-nsc."
+    description := "Library to patch broken .semanticdb files produced by semanticdb-sbt."
   )
 
 val sbtHostScalacOptions =
   settingKey[Seq[String]]("Scalac options required for the sbt host plugin.")
 sbtHostScalacOptions.in(Global) := {
-  val jarname = s"sbthost-nsc_2.10.6-${version.value}.jar"
+  val jarname = s"semanticdb-sbt_2.10.6-${version.value}.jar"
   // TODO(olafur) avoid getparent()
   val sbthostPlugin = classDirectory.in(nsc, Compile).value.getParentFile / jarname
   val sbthostPluginPath = sbthostPlugin.getAbsolutePath
   val dummy = "-Jdummy=" + sbthostPlugin.lastModified
   s"-Xplugin:$sbthostPluginPath" ::
-    "-Xplugin-require:sbthost" ::
+    "-Xplugin-require:semanticdb-sbt" ::
     dummy ::
     Nil
 }
@@ -67,7 +67,7 @@ lazy val sbtTests = project
     scriptedLaunchOpts ++= {
       val targetDirectory: File = classDirectory.in(Compile).value
       val options: Seq[String] =
-        s"-P:sbthost:targetroot:$targetDirectory" +:
+        s"-P:semanticdb-sbt:targetroot:$targetDirectory" +:
           sbtHostScalacOptions.value
       Seq(
         "-Xmx1024M",

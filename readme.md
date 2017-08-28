@@ -13,17 +13,18 @@ Parts of this project may later
 
 This project consists of two modules:
 
-- sbthost-nsc: a compiler plugin for Scala 2.10 that emits `.semanticdb` files
+- semanticdb-sbt: a compiler plugin for Scala 2.10 that emits `.semanticdb` files
   (see [Semantic DB](http://scalameta.org/tutorial/#SemanticDB)) during compilation.
-  sbthost-nsc only emits offset positions and it does not make an effort to
+  semanticdb-sbt only emits offset positions and it does not make an effort to
   disambiguate between resolved names in conflicting positions.
-- sbthost-runtime: a 2.11/2.12 library that modifies/patches `.semanticdb` files,
-  produced by sbthost-nsc. sbthost-runtime is used by applications like
+- semanticdb-sbt-runtime: a 2.11/2.12 library that modifies/patches `.semanticdb` files,
+  produced by semanticdb-sbt. semanticdb-sbt-runtime is used by applications like
   scalafix at *runtime*, as opposed to compile-time during creation of
-  `.semanticdb` files.  sbthost-runtime does a best-effort of converting the
+  `.semanticdb` files.  semanticdb-sbt-runtime does a best-effort of converting the
   emitted offset positions into range positions as well as to disambiguate
   between names at conflicting positions.
 
 
-Note. These artifacts will soon be renamed from sbthost to semanticdb-sbt.
+Note. The codebase still has occasional references to sbthost, which is
+the old name of semanticdb-sbt.
 
