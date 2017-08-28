@@ -13,7 +13,7 @@ import scala.tools.nsc.Phase
 import scala.tools.nsc.io.VirtualFile
 import scala.tools.nsc.plugins.PluginComponent
 import scala.tools.nsc.reporters.StoreReporter
-import scala.meta.internal.semantic.{schema => s}
+import org.langmeta.internal.semantic.{schema => s}
 
 trait SbthostPipeline extends DatabaseOps { self: SbthostPlugin =>
   object SbthostComponent extends PluginComponent {

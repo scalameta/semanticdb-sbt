@@ -17,7 +17,6 @@ lazy val nsc = project
     mergeSettings,
     description := "Compiler plugin to produce .semanticdb files for sbt builds.",
     libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
-    protobufSettings
   )
 
 lazy val runtime = project
@@ -103,16 +102,6 @@ lazy val tests = project
   )
   .dependsOn(runtime)
   .enablePlugins(BuildInfoPlugin)
-
-lazy val protobufSettings = Seq(
-  PB.targets.in(Compile) := Seq(
-    scalapb.gen(
-      flatPackage = true // Don't append filename to package
-    ) -> sourceManaged.in(Compile).value
-  ),
-  PB.protoSources.in(Compile) := Seq(file("sbthost/nsc/src/main/protobuf")),
-  libraryDependencies += "com.trueaccord.scalapb" %% "scalapb-runtime" % scalapbVersion
-)
 
 lazy val mergeSettings = Def.settings(
   test.in(assembly) := {},
