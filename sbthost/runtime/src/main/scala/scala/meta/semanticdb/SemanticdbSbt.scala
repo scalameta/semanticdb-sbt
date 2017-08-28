@@ -1,21 +1,21 @@
 package scala.meta
-package sbthost
+package semanticdb
 
 import scala.collection.mutable
 import scala.meta.tokens.Token.Ident
 
-object Sbthost {
+object SemanticdbSbt {
   private def label(doc: Document) = doc.input match {
     case Input.VirtualFile(label, _) => label
     case els => els.toString
   }
 
-  private val isSbthostDb = Set("Scala210", "Sbt0137")
+  private val isSbtDialect = Set("Scala210", "Sbt0137")
 
   def patchDatabase(db: Database, sourceroot: AbsolutePath): Database = {
-    if (!db.documents.exists(x => isSbthostDb(x.language))) {
+    if (!db.documents.exists(x => isSbtDialect(x.language))) {
       // Optimization. Some databases can be quite large and most of dbs
-      // from applications like scalafix will not have sbthost semanticdbs.
+      // from applications like scalafix will not have sbt semanticdbs.
       db
     } else {
       val entries = db.documents.groupBy(label).map {
