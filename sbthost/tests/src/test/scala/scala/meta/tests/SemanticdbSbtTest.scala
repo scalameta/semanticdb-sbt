@@ -2,19 +2,19 @@ package scala.meta
 package tests
 
 import java.io.File
-import scala.meta.sbthost.Sbthost
+import scala.meta.semanticdb.SemanticdbSbt
 import org.scalatest.FunSuite
 import org.scalatest.exceptions.TestFailedException
 import scala.meta.testkit.DiffAssertions
 
-abstract class SbthostTest(sourcerootFile: File, targetroot: File)
+abstract class SemanticdbSbtTest(sourcerootFile: File, targetroot: File)
     extends FunSuite
     with DiffAssertions {
   val sourceroot = AbsolutePath(sourcerootFile)
 
   val mirror: Database = {
     val broken = Database.load(Classpath(AbsolutePath(targetroot)))
-    Sbthost.patchDatabase(broken, sourceroot)
+    SemanticdbSbt.patchDatabase(broken, sourceroot)
   }
 
   private val sanitize = "_empty_\\.(\\$[^\\.]+)\\.".r
@@ -39,7 +39,7 @@ abstract class SbthostTest(sourcerootFile: File, targetroot: File)
 
 }
 
-class ScalaFileTest extends SbthostTest(BuildInfo.sourceroot, BuildInfo.targetroot) {
+class ScalaFileTest extends SemanticdbSbtTest(BuildInfo.sourceroot, BuildInfo.targetroot) {
   checkNames(
     "CompiledWith",
     """Language:
@@ -72,7 +72,7 @@ class ScalaFileTest extends SbthostTest(BuildInfo.sourceroot, BuildInfo.targetro
   )
 }
 
-class SbtFileTest extends SbthostTest(BuildInfo.sbtSourceroot, BuildInfo.sbtTargetroot) {
+class SbtFileTest extends SemanticdbSbtTest(BuildInfo.sbtSourceroot, BuildInfo.sbtTargetroot) {
   checkNames(
     "build.sbt",
     """
