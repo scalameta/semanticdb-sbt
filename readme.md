@@ -9,7 +9,6 @@ In particular, the objective is to allow
 to use the Scalameta [Semantic API](http://scalameta.org/tutorial/#SemanticAPI)
 for accurate source rewriting of sbt build files.
 This project is not intended to be used for other purposes.
-Parts of this project may later
 
 This project consists of two modules:
 
@@ -24,7 +23,5 @@ This project consists of two modules:
   emitted offset positions into range positions as well as to disambiguate
   between names at conflicting positions.
 
-
 Note. The codebase still has occasional references to sbthost, which is
 the old name of semanticdb-sbt.
-
