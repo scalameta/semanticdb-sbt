@@ -1,6 +1,6 @@
 # semanticdb-sbt - Semantic API for Scala 2.10 and sbt 0.13
 
-[![Build Status](https://travis-ci.org/scalameta/sbthost.svg?branch=master)](https://travis-ci.org/scalameta/sbthost)
+[![Build Status](https://travis-ci.org/scalameta/semanticdb-sbt.svg?branch=master)](https://travis-ci.org/scalameta/semanticdb-sbt)
 [![Join the chat at https://gitter.im/scalameta/scalameta](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/scalameta/scalameta)
 
 The objective of this project is aid migration from sbt v0.13 to v1.0.
