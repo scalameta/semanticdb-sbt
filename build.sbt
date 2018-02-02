@@ -37,10 +37,8 @@ sbtHostScalacOptions.in(Global) := {
   // TODO(olafur) avoid getparent()
   val sbthostPlugin = classDirectory.in(nsc, Compile).value.getParentFile / jarname
   val sbthostPluginPath = sbthostPlugin.getAbsolutePath
-  val dummy = "-Jdummy=" + sbthostPlugin.lastModified
   s"-Xplugin:$sbthostPluginPath" ::
     "-Xplugin-require:semanticdb-sbt" ::
-    dummy ::
     Nil
 }
 
@@ -52,7 +50,8 @@ lazy val input = project
     sbtPlugin := true,
     compile.in(Compile) :=
       compile.in(Compile).dependsOn(Keys.`package`.in(nsc, Compile)).value,
-    scalacOptions ++= sbtHostScalacOptions.value
+    scalacOptions ++= sbtHostScalacOptions.value,
+    scalacOptions += "-Jdummy=" + System.currentTimeMillis()
   )
 
 lazy val sbtTests = project
@@ -146,10 +145,12 @@ lazy val mergeSettings = Def.settings(
   }
 )
 
-lazy val scalametaVersion = "2.0.0-M3"
+// NOTE: Can't upgrade to 2.10.7, because sbt is using 2.10.6.
+// (Well, it WAS using 2.10.6 until it was upgraded to 2.10.7 in 0.13.17).
+lazy val scalametaVersion = "3.0.0"
 lazy val scala210 = "2.10.6"
-lazy val scala211 = "2.11.11"
-lazy val scala212 = "2.12.3"
+lazy val scala211 = "2.11.12"
+lazy val scala212 = "2.12.4"
 
 lazy val isScala210 = Seq(
   scalaVersion := scala210,
