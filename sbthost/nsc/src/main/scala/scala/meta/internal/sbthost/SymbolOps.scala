@@ -1,5 +1,6 @@
 package scala.meta.internal.sbthost
 
+import java.util._
 import org.{langmeta => m}
 import scala.reflect.internal.util.NoPosition
 
@@ -19,6 +20,7 @@ trait InputOps { self: DatabaseOps =>
 
 trait SymbolOps { self: DatabaseOps =>
 
+  private var nextId = 0
   implicit class XtensionGSymbolMSymbol(sym: g.Symbol) {
     def toSemantic: m.Symbol = {
       if (sym == null || sym == g.NoSymbol) return m.Symbol.None
@@ -43,9 +45,9 @@ trait SymbolOps { self: DatabaseOps =>
       if (isLocal(sym)) {
         if (sym.pos == NoPosition) return m.Symbol.None
         else {
-          val input = "file://" + sym.pos.source.toString()
-          val point = sym.pos.point
-          return m.Symbol.Local(s"$input@$point..$point")
+          val id = nextId
+          nextId += 1
+          m.Symbol.Local("local" + id.toString)
         }
       }
       // - deviation from scalameta

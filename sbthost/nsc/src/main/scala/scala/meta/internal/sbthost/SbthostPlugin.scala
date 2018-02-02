@@ -3,7 +3,6 @@ package scala.meta.internal.sbthost
 import java.nio.file.Paths
 import scala.meta.internal.sbthost
 import scala.meta.internal.sbthost
-import org.langmeta.internal.semanticdb.{schema => s}
 import scala.tools.nsc.Global
 import scala.tools.nsc.plugins.Plugin
 import scala.tools.nsc.plugins.PluginComponent
