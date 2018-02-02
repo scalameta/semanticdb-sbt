@@ -37,10 +37,8 @@ sbtHostScalacOptions.in(Global) := {
   // TODO(olafur) avoid getparent()
   val sbthostPlugin = classDirectory.in(nsc, Compile).value.getParentFile / jarname
   val sbthostPluginPath = sbthostPlugin.getAbsolutePath
-  val dummy = "-Jdummy=" + sbthostPlugin.lastModified
   s"-Xplugin:$sbthostPluginPath" ::
     "-Xplugin-require:semanticdb-sbt" ::
-    dummy ::
     Nil
 }
 
@@ -52,7 +50,8 @@ lazy val input = project
     sbtPlugin := true,
     compile.in(Compile) :=
       compile.in(Compile).dependsOn(Keys.`package`.in(nsc, Compile)).value,
-    scalacOptions ++= sbtHostScalacOptions.value
+    scalacOptions ++= sbtHostScalacOptions.value,
+    scalacOptions += "-Jdummy=" + System.currentTimeMillis()
   )
 
 lazy val sbtTests = project
