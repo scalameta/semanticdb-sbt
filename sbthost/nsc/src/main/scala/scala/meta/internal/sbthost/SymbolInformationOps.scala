@@ -81,7 +81,7 @@ trait SymbolInformationOps { self: DatabaseOps =>
       gsym.decodedName.toString
     }
 
-    private def range: Option[s.Range] = None
+    private def range: Option[s.Location] = None
 
     private def signature: Option[s.TextDocument] = {
       val text = {
