@@ -95,6 +95,8 @@ trait SymbolInformationOps { self: DatabaseOps =>
 
     private def overrides: List[String] = Nil
 
+    private def tpe: Option[s.Type] = None
+
     def toSymbolInformation: s.SymbolInformation = {
       s.SymbolInformation(
         symbol,
@@ -105,7 +107,8 @@ trait SymbolInformationOps { self: DatabaseOps =>
         range,
         signature,
         members,
-        overrides)
+        overrides,
+        tpe)
     }
   }
 }
