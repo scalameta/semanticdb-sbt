@@ -185,7 +185,7 @@ lazy val publishableSettings: Seq[Def.Setting[_]] = Seq(
   bintrayOrganization := Some("scalameta"),
   bintrayRepository := "maven",
   publishMavenStyle := true,
-  licenses += "BSD" -> url("https://github.com/scalameta/scalameta/blob/master/LICENSE.md"),
+  licenses += "Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"),
   pomExtra := (
     <url>https://github.com/scalameta/scalameta</url>
     <inceptionYear>2017</inceptionYear>
