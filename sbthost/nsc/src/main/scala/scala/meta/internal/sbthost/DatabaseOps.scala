@@ -7,8 +7,10 @@ trait DatabaseOps
     with ConfigOps
     with InputOps
     with LanguageOps
+    with NameOps
     with RangeOps
     with SymbolInformationOps
+    with TypeOps
     with HijackReporterOps
     with ReflectionToolkit {
   val global: Global
