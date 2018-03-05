@@ -147,7 +147,7 @@ lazy val mergeSettings = Def.settings(
 
 // NOTE: Can't upgrade to 2.10.7, because sbt is using 2.10.6.
 // (Well, it WAS using 2.10.6 until it was upgraded to 2.10.7 in 0.13.17).
-lazy val scalametaVersion = "3.3.0"
+lazy val scalametaVersion = "3.3.1"
 lazy val scala210 = "2.10.6"
 lazy val scala211 = "2.11.12"
 lazy val scala212 = "2.12.4"
